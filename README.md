@@ -72,22 +72,22 @@ unsafe configurations at admission rather than catching them in review.
 
 ## Tech stack
 
-| Layer | Choice | Status |
-| --- | --- | --- |
-| **Local cluster** | [kind](docs/decisions/0001-local-cluster-kind-over-k3d.md), 1 control-plane + 2 workers | ✅ Phase 1 |
-| **Cloud infra** | Terraform — [provider deferred](docs/decisions/0002-defer-cloud-provider-choice.md) | ⬜ Phase 10 |
-| **Packaging** | Helm (reuse) + Kustomize (environments), [each for its strength](helm/README.md) | ⬜ Phase 4 |
-| **GitOps** | Argo CD + ApplicationSets | ⬜ Phase 6 |
-| **CI/CD** | GitHub Actions, Trivy, Syft, Cosign | ⬜ Phase 5 |
-| **Networking** | ingress-nginx, cert-manager | ⬜ Phase 2 |
-| **Metrics** | Prometheus, Grafana, Alertmanager | ⬜ Phase 7 |
-| **Logs** | Loki + Fluent Bit | ⬜ Phase 7 |
-| **Traces** | OpenTelemetry Collector + Tempo | ⬜ Phase 7 |
-| **Policy** | Kyverno, Pod Security Admission, NetworkPolicies | ⬜ Phase 8 |
-| **Secrets** | External Secrets Operator | ⬜ Phase 8 |
-| **Backup/DR** | Velero + independent `pg_dump` | ⬜ Phase 11 |
-| **Chaos** | Chaos Mesh or Litmus | ⬜ Phase 12 |
-| **Progressive delivery** | Argo Rollouts | ⬜ Phase 13 |
+| Layer                    | Choice                                                                                  | Status      |
+| ------------------------ | --------------------------------------------------------------------------------------- | ----------- |
+| **Local cluster**        | [kind](docs/decisions/0001-local-cluster-kind-over-k3d.md), 1 control-plane + 2 workers | ✅ Phase 1  |
+| **Cloud infra**          | Terraform — [provider deferred](docs/decisions/0002-defer-cloud-provider-choice.md)     | ⬜ Phase 10 |
+| **Packaging**            | Helm (reuse) + Kustomize (environments), [each for its strength](helm/README.md)        | ⬜ Phase 4  |
+| **GitOps**               | Argo CD + ApplicationSets                                                               | ⬜ Phase 6  |
+| **CI/CD**                | GitHub Actions, Trivy, Syft, Cosign                                                     | ⬜ Phase 5  |
+| **Networking**           | ingress-nginx, cert-manager                                                             | ⬜ Phase 2  |
+| **Metrics**              | Prometheus, Grafana, Alertmanager                                                       | ⬜ Phase 7  |
+| **Logs**                 | Loki + Fluent Bit                                                                       | ⬜ Phase 7  |
+| **Traces**               | OpenTelemetry Collector + Tempo                                                         | ⬜ Phase 7  |
+| **Policy**               | Kyverno, Pod Security Admission, NetworkPolicies                                        | ⬜ Phase 8  |
+| **Secrets**              | External Secrets Operator                                                               | ⬜ Phase 8  |
+| **Backup/DR**            | Velero + independent `pg_dump`                                                          | ⬜ Phase 11 |
+| **Chaos**                | Chaos Mesh or Litmus                                                                    | ⬜ Phase 12 |
+| **Progressive delivery** | Argo Rollouts                                                                           | ⬜ Phase 13 |
 
 **Deliberately excluded:** service mesh, multi-cloud, multi-cluster. Each with a
 written reason in [ROADMAP.md](ROADMAP.md#deliberate-exclusions) — what you leave out
@@ -137,7 +137,7 @@ letting Argo CD reconcile.
 
 ⬜ **Phase 4.** Three environments — `dev`, `staging`, `prod` — as Kustomize overlays
 over a single base. Overlays may differ in replica counts, resources, hostnames,
-image tags, HPA bounds, and log level. They may **not** differ in resource *shape*,
+image tags, HPA bounds, and log level. They may **not** differ in resource _shape_,
 because an environment running an untested topology is not a meaningful gate. See
 [kustomize/README.md](kustomize/README.md).
 
@@ -174,13 +174,13 @@ and restore drills that actually run. An untested backup is not a backup. See
 
 ## Testing
 
-| Layer | What | Phase |
-| --- | --- | --- |
-| Static validation | kubeconform, helm lint, kustomize build | 4 |
-| Policy tests | must-block **and** must-allow fixtures per policy | 8 |
-| Integration | against an ephemeral kind cluster in CI | 5 |
-| Smoke | post-deploy, gates rollback | 6 |
-| Resilience | chaos experiments | 12 |
+| Layer             | What                                              | Phase |
+| ----------------- | ------------------------------------------------- | ----- |
+| Static validation | kubeconform, helm lint, kustomize build           | 4     |
+| Policy tests      | must-block **and** must-allow fixtures per policy | 8     |
+| Integration       | against an ephemeral kind cluster in CI           | 5     |
+| Smoke             | post-deploy, gates rollback                       | 6     |
+| Resilience        | chaos experiments                                 | 12    |
 
 Today: `make lint-shell` and `make verify` (clean bootstrap → healthy → teardown).
 See [tests/README.md](tests/README.md).
@@ -196,12 +196,12 @@ Common issues — Docker daemon unreachable, a half-created cluster, nodes stuck
 15 phases, cumulative, each independently demoable. Full detail with per-phase
 acceptance criteria in **[ROADMAP.md](ROADMAP.md)**.
 
-| | | | |
-| --- | --- | --- | --- |
-| 🟡 1 Foundation | ⬜ 2 Cluster basics | ⬜ 3 App deployment | ⬜ 4 Packaging |
-| ⬜ 5 CI/CD | ⬜ 6 GitOps | ⬜ 7 Observability | ⬜ 8 Security |
-| ⬜ 9 Scaling | ⬜ 10 IaC | ⬜ 11 Backup/DR | ⬜ 12 Chaos |
-| ⬜ 13 Progressive delivery | ⬜ 14 Production readiness | ⬜ 15 Polish | |
+|                            |                            |                     |                |
+| -------------------------- | -------------------------- | ------------------- | -------------- |
+| 🟡 1 Foundation            | ⬜ 2 Cluster basics        | ⬜ 3 App deployment | ⬜ 4 Packaging |
+| ⬜ 5 CI/CD                 | ⬜ 6 GitOps                | ⬜ 7 Observability  | ⬜ 8 Security  |
+| ⬜ 9 Scaling               | ⬜ 10 IaC                  | ⬜ 11 Backup/DR     | ⬜ 12 Chaos    |
+| ⬜ 13 Progressive delivery | ⬜ 14 Production readiness | ⬜ 15 Polish        |                |
 
 ## Screenshots
 
@@ -209,32 +209,6 @@ acceptance criteria in **[ROADMAP.md](ROADMAP.md)**.
 latency flat, an Argo CD sync view, a chaos experiment recovering, a canary aborting
 itself on bad metrics. Placeholders rather than stock images — nothing here will
 claim to show something that has not been run.
-
-## Repository structure
-
-```
-├── apps/          sample services that exercise the platform
-├── argocd/        Application, ApplicationSet, AppProject manifests
-├── backup/        Velero schedules, restore drills
-├── chaos/         experiments, steady-state hypotheses, results
-├── diagrams/      diagram sources + exports
-├── docs/          architecture, guides, ADRs
-├── examples/      small workloads proving one capability each
-├── helm/          first-party charts
-├── infra/kind/    local cluster topology          ← works today
-├── infra/terraform/  cloud infrastructure
-├── k8s/base/      raw manifests / Kustomize base
-├── kustomize/     dev / staging / prod overlays
-├── logging/       Loki, Fluent Bit
-├── monitoring/    Prometheus, Grafana, Alertmanager
-├── runbooks/      one per failure scenario
-├── scripts/       bootstrap, teardown, drills      ← works today
-├── security/      Kyverno, NetworkPolicies, PSA
-├── tests/         manifest, policy, integration, smoke
-└── tracing/       OpenTelemetry, Tempo
-```
-
-Every directory has a README explaining what belongs in it and which phase fills it.
 
 ## Design decisions
 
