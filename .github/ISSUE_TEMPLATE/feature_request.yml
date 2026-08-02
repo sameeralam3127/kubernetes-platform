@@ -1,0 +1,57 @@
+name: ✨ Proposal
+description: Suggest a capability, component, or change of direction
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [ROADMAP.md](../blob/main/ROADMAP.md) first — it may already be planned,
+        or [deliberately excluded](../blob/main/ROADMAP.md#deliberate-exclusions) with
+        a stated reason.
+
+        Adding a component to this platform is a design decision, so proposals are
+        judged on the same basis as ADRs: what it costs, not only what it buys.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the problem, not the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+    validations:
+      required: true
+
+  - type: textarea
+    id: cost
+    attributes:
+      label: What does this cost?
+      description: |
+        Operational complexity, setup time, resource footprint, another thing to keep
+        patched, another concept to explain. "It's popular" is not a justification.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: And specifically why each was rejected.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Which phase does this belong to?
+      options:
+        - "Fits an existing phase"
+        - "New phase / beyond the current roadmap"
+        - "Not sure"
+    validations:
+      required: true

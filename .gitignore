@@ -1,0 +1,72 @@
+# ---- OS / editor noise ----
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+
+# ---- Claude Code ----
+# Ignore local Claude state, but keep the committed skill definitions.
+.claude/*
+!.claude/skills/
+!.claude/skills/**
+
+# ---- Secrets & credentials (never commit) ----
+# Deliberately broad: forcing an occasional `git add -f` is far cheaper than
+# rotating a leaked credential.
+*.pem
+*.key
+*.p12
+*.pfx
+*.env
+.env.*
+!.env.example
+secrets.yaml
+secrets.yml
+*-secret.yaml
+*.decrypted.*
+kubeconfig
+kubeconfig-*
+*.kubeconfig
+
+# ---- Terraform (Phase 10) ----
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+*.auto.tfvars
+terraform.tfvars
+!terraform.tfvars.example
+
+# ---- Helm (Phase 4) ----
+**/charts/*.tgz
+**/Chart.lock
+.helm-cache/
+
+# ---- Build & language artifacts (Phase 3) ----
+dist/
+build/
+bin/
+out/
+node_modules/
+coverage/
+*.log
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+vendor/
+
+# ---- Local platform scratch state ----
+# Written by scripts/ during local cluster bootstrap. See scripts/README.md.
+.local/
+tmp/
+*.local.yaml

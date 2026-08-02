@@ -1,0 +1,2 @@
+# Kustomize base — populated in Phase 2 (namespaces, RBAC, quotas).
+# See ../README.md

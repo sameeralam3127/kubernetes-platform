@@ -1,0 +1,76 @@
+# Local development cluster for kubernetes-platform.
+#
+# Created by `make up` (scripts/cluster-up.sh). See infra/kind/README.md for the
+# rationale behind this topology, and docs/local-development.md for the walkthrough.
+#
+# Node image is intentionally NOT pinned here — kind uses the default image matched
+# to your kind binary. Pin explicitly for reproducible runs:
+#   KIND_NODE_IMAGE="kindest/node:v1.34.0@sha256:<digest>" make up
+# cluster-up.sh injects it at create time and records the resulting version in
+# .local/cluster-info.txt.
+---
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+networking:
+  # Bind API server to loopback only. This cluster must never be reachable from
+  # the local network — see SECURITY.md.
+  apiServerAddress: "127.0.0.1"
+  apiServerPort: 6443
+  # Explicit, non-overlapping with common home/VPN ranges (192.168.0.0/16 in
+  # particular collides with plenty of home routers).
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/16"
+  # Default CNI (kindnet) stays enabled for Phase 1. Phase 8 verifies whether it
+  # actually enforces NetworkPolicy; if not, this becomes disableDefaultCNI: true
+  # plus Calico or Cilium, recorded as its own ADR.
+  disableDefaultCNI: false
+  kubeProxyMode: "iptables"
+
+nodes:
+  # ---- Control plane ----
+  # Also carries the ingress controller (Phase 2): with only three nodes, tainting
+  # the control plane away from all workloads wastes a third of a laptop cluster.
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true,platform.local/role=control-plane"
+    extraPortMappings:
+      # HTTP / HTTPS for ingress-nginx (Phase 2). Loopback-only by design.
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+        listenAddress: "127.0.0.1"
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+        listenAddress: "127.0.0.1"
+      # General-purpose NodePort escape hatch for quick demos that should not
+      # require reconfiguring ingress.
+      - containerPort: 30000
+        hostPort: 30000
+        protocol: TCP
+        listenAddress: "127.0.0.1"
+
+  # ---- Workers ----
+  # Two workers, not one: pod anti-affinity, PodDisruptionBudgets, topology spread
+  # constraints, and the Phase 12 node-drain experiment are all no-ops on a
+  # single-node cluster.
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "platform.local/role=worker,topology.kubernetes.io/zone=local-a"
+
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "platform.local/role=worker,topology.kubernetes.io/zone=local-b"

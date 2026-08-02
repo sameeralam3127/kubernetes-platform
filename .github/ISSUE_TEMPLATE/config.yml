@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/sameeralam3127/kubernetes-platform/security/advisories/new
+    about: Do NOT open a public issue for security problems. Report privately here.
+  - name: 🗺️ Check the roadmap first
+    url: https://github.com/sameeralam3127/kubernetes-platform/blob/main/ROADMAP.md
+    about: Most "this is missing" observations are phases that have not landed yet.
+  - name: 💬 Ask a question
+    url: https://github.com/sameeralam3127/kubernetes-platform/discussions
+    about: Questions about how or why the platform works the way it does.
