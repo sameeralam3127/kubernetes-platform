@@ -6,10 +6,8 @@ Thumbs.db
 .idea/
 
 # ---- Claude Code ----
-# Ignore local Claude state, but keep the committed skill definitions.
-.claude/*
-!.claude/skills/
-!.claude/skills/**
+# Local tooling state and skill definitions. Not part of the platform.
+.claude/
 
 # ---- Secrets & credentials (never commit) ----
 # Deliberately broad: forcing an occasional `git add -f` is far cheaper than
