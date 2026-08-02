@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kubernetes-platform — a production-style internal developer platform</title>
+<meta name="description" content="A production-style internal developer platform on Kubernetes: GitOps with Argo CD, observability, policy-as-code, backup/DR and chaos engineering — built in public across 15 cumulative phases.">
+<meta name="author" content="Sameer Alam">
+<meta name="theme-color" content="#070b14">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="kubernetes-platform">
+<meta property="og:description" content="A production-style internal developer platform on Kubernetes — built in public, one phase at a time.">
+<meta property="og:url" content="https://sameeralam3127.github.io/kubernetes-platform/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="kubernetes-platform">
+<meta name="twitter:description" content="A production-style internal developer platform on Kubernetes — built in public, one phase at a time.">
+
+<link rel="canonical" href="https://sameeralam3127.github.io/kubernetes-platform/">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23326ce5'/><text y='.9em' x='50%' text-anchor='middle' font-size='62' font-family='monospace' fill='white'>k</text></svg>">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- ================= NAV ================= -->
+<nav class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <span class="brand-mark">k</span>
+      <span class="n">kubernetes-platform</span>
+    </a>
+    <div class="nav-links" id="navLinks">
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#stack">Stack</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#structure">Structure</a>
+      <a href="#decisions">Decisions</a>
+      <a href="#start">Quick start</a>
+    </div>
+    <div class="nav-actions">
+      <button class="icon-btn" id="theme" aria-label="Toggle colour theme" title="Toggle theme">
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a class="icon-btn" href="https://github.com/sameeralam3127/kubernetes-platform" aria-label="View on GitHub" title="GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.8 10.9.6.1.8-.2.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 1.8 2.7 1.3 3.4 1 .1-.7.4-1.3.7-1.5-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.2-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.4 11.4 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.9 1.2 1.9 1.2 3.2 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6 4.6-1.5 7.8-5.8 7.8-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+      </a>
+      <button class="icon-btn nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main id="main">
+<span id="top"></span>
+
+<!-- ================= HERO ================= -->
+<header class="hero">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="status-pill">
+          <span class="dot"></span>
+          <span><b>Phase 1 of 15</b> — Foundation complete, cluster bootstrap live</span>
+        </div>
+        <h1>The Kubernetes platform<br><span class="grad">a team would actually run.</span></h1>
+        <p class="hero-sub">
+          Not a Deployment, a Service and a README that says “production-ready”. A paved road with
+          guardrails: GitOps delivery, policy enforced at admission, tested backups, and resilience
+          claims verified by breaking things on purpose.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="https://github.com/sameeralam3127/kubernetes-platform">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.8 10.9.6.1.8-.2.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 1.8 2.7 1.3 3.4 1 .1-.7.4-1.3.7-1.5-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.2-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.4 11.4 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.9 1.2 1.9 1.2 3.2 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6 4.6-1.5 7.8-5.8 7.8-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+            View the repository
+          </a>
+          <a class="btn btn-ghost" href="#architecture">Explore the architecture</a>
+        </div>
+        <div class="badges">
+          <span class="badge on">✓ make verify passing</span>
+          <span class="badge">Kubernetes v1.36.1</span>
+          <span class="badge">kind v0.32.0</span>
+          <span class="badge">MIT</span>
+        </div>
+      </div>
+
+      <div class="term" aria-label="Terminal demonstration of the cluster bootstrap">
+        <div class="term-bar"><i></i><i></i><i></i><span>make up — kubernetes-platform</span></div>
+        <div class="term-body" id="term"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= STATS ================= -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="stats rv">
+      <div class="stat"><b>15</b><span>Phases</span></div>
+      <div class="stat"><b>3</b><span>Cluster nodes</span></div>
+      <div class="stat"><b>1</b><span>Command to boot</span></div>
+      <div class="stat"><b>45</b><span>Files tracked</span></div>
+      <div class="stat"><b>0</b><span>Secrets in git</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= OVERVIEW ================= -->
+<section id="overview" class="alt">
+  <div class="wrap">
+    <div class="section-head rv">
+      <span class="eyebrow">Overview</span>
+      <h2>What this is, and what it is not</h2>
+      <p class="lede">
+        Built as a cumulative 15-phase roadmap. Each phase leaves the repository in a coherent,
+        demoable state and builds on the last rather than bolting on beside it.
+      </p>
+    </div>
+
+    <div class="grid-2 two">
+      <article class="card rv">
+        <h3><span class="ico">◎</span> The problem</h3>
+        <p>
+          An application team should ship a service without knowing how ingress, TLS, autoscaling,
+          network policy, secret management or tracing work. A platform team should be able to
+          guarantee every shipped service has all of them, correctly, by default.
+        </p>
+      </article>
+      <article class="card rv">
+        <h3><span class="ico">⬢</span> The approach</h3>
+        <p>
+          Guardrails that <em>reject</em> unsafe configuration at admission rather than catching it
+          in review. Missing resource limits, unsigned images and <code>:latest</code> tags are
+          refused by the cluster, not by a reviewer having a good day.
+        </p>
+      </article>
+      <article class="card rv">
+        <h3><span class="ico">◆</span> Honest status</h3>
+        <p>
+          Nothing here is described as done before it is. Phase 1 works and is verified end to end;
+          the other fourteen are documented scaffolding with acceptance criteria written in advance,
+          so progress is measurable rather than asserted.
+        </p>
+      </article>
+      <article class="card rv">
+        <h3><span class="ico">✕</span> Deliberate exclusions</h3>
+        <p>
+          Service mesh, multi-cloud and multi-cluster are excluded on purpose, each with a written
+          reason. What you leave out is a design decision too — and defending an exclusion is harder
+          than adding a logo to a diagram.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ARCHITECTURE ================= -->
+<section id="architecture">
+  <div class="wrap">
+    <div class="section-head rv">
+      <span class="eyebrow">Architecture</span>
+      <h2>Every layer, and when it lands</h2>
+      <p class="lede">
+        The full target architecture. Components in <span style="color:var(--green)">green</span> are
+        running today; the rest carry the phase that delivers them. Hover any layer to focus it.
+      </p>
+    </div>
+
+    <div class="arch rv" id="arch"></div>
+
+    <div class="legend rv">
+      <span><i style="background:var(--green)"></i>Live today (Phase 1)</span>
+      <span><i style="background:var(--border-bright)"></i>Planned, phase noted</span>
+      <span><i style="background:var(--k8s)"></i>Flow direction</span>
+    </div>
+
+    <div class="callout rv">
+      <span class="ci">⚠</span>
+      <p>
+        <b>The local cluster is not hardened.</b> Pod Security Admission, NetworkPolicies, Kyverno
+        and image signing all arrive in Phase 8. Until then this is a development cluster bound to
+        <code>127.0.0.1</code> — the security posture is documented rather than implied.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STACK ================= -->
+<section id="stack" class="alt">
+  <div class="wrap">
+    <div class="section-head rv">
+      <span class="eyebrow">Tech stack</span>
+      <h2>Chosen, not collected</h2>
+      <p class="lede">
+        Every component has to justify its operational complexity, not just its popularity.
+        Filter by delivery status.
+      </p>
+    </div>
+    <div class="filters rv" id="stackFilters" role="group" aria-label="Filter stack by status"></div>
+    <div class="stack-grid" id="stackGrid"></div>
+  </div>
+</section>
+
+<!-- ================= ROADMAP ================= -->
+<section id="roadmap">
+  <div class="wrap">
+    <div class="section-head rv">
+      <span class="eyebrow">Roadmap</span>
+      <h2>Fifteen cumulative phases</h2>
+      <p class="lede">
+        Each phase has an objective, named deliverables, tools and acceptance criteria written
+        <em>before</em> the work starts. Select a phase to expand it.
+      </p>
+    </div>
+    <div class="filters rv" id="phaseFilters" role="group" aria-label="Filter phases by status"></div>
+    <div class="timeline" id="timeline"></div>
+    <noscript>
+      <p class="lede" style="margin-top:20px">
+        This roadmap renders with JavaScript. The full plan is also in
+        <a href="https://github.com/sameeralam3127/kubernetes-platform/blob/main/ROADMAP.md">ROADMAP.md</a>.
+      </p>
+    </noscript>
+  </div>
+</section>
+
+<!-- ================= STRUCTURE ================= -->
+<section id="structure" class="alt">
+  <div class="wrap">
+    <div class="section-head rv">
+      <span class="eyebrow">Repository</span>
+      <h2>Where everything lives</h2>
+      <p class="lede">
+        Every directory has a README explaining what belongs in it, what does not, and which phase
+        fills it — so an empty folder is a documented plan rather than an unfinished thought.
+      </p>
+    </div>
+    <div class="tree rv" id="tree"></div>
+  </div>
+</section>
+
+<!-- ================= DECISIONS ================= -->
+<section id="decisions">
+  <div class="wrap">
+    <div class="section-head rv">
+      <span class="eyebrow">Decision records</span>
+      <h2>Choices, with their costs stated</h2>
+      <p class="lede">
+        Non-obvious decisions are recorded as ADRs. Each states what the choice costs, not only what
+        it buys — a decision record that only lists benefits is marketing.
+      </p>
+    </div>
+    <div class="grid-2 two" id="adrs"></div>
+  </div>
+</section>
+
+<!-- ================= QUICK START ================= -->
+<section id="start" class="alt">
+  <div class="wrap">
+    <div class="section-head rv">
+      <span class="eyebrow">Quick start</span>
+      <h2>Cluster in one command</h2>
+      <p class="lede">
+        Requires Docker (4&nbsp;GiB+), <code>kind</code>, <code>kubectl</code> and <code>make</code>.
+        <code>make preflight</code> checks all of it and names anything missing.
+      </p>
+    </div>
+
+    <div class="grid-2">
+      <div class="rv">
+        <div class="code">
+          <div class="code-head">
+            <span>bash</span>
+            <button class="copy" data-copy="git clone https://github.com/sameeralam3127/kubernetes-platform.git
+cd kubernetes-platform
+
+make preflight   # verify your toolchain
+make up          # create the cluster (1-3 min first run)
+make status      # confirm healthy
+make down        # tear it all down">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              copy
+            </button>
+          </div>
+<pre><span class="cm"># clone and boot</span>
+git clone https://github.com/sameeralam3127/kubernetes-platform.git
+<span class="ck">cd</span> kubernetes-platform
+
+make preflight   <span class="cm"># verify your toolchain</span>
+make up          <span class="cm"># create the cluster (1-3 min)</span>
+make status      <span class="cm"># confirm healthy</span>
+make down        <span class="cm"># tear it all down</span></pre>
+        </div>
+      </div>
+
+      <div class="rv">
+        <article class="card" style="height:100%">
+          <h3><span class="ico">✓</span> What you get</h3>
+          <p style="margin-bottom:14px">
+            A three-node cluster — one control plane, two workers. Two workers rather than one
+            because PodDisruptionBudgets, pod anti-affinity, topology spread and the Phase&nbsp;12
+            node-drain experiment are all no-ops on a single node.
+          </p>
+          <div class="tools">
+            <span class="tool">1 control-plane</span>
+            <span class="tool">2 workers</span>
+            <span class="tool">zones local-a / local-b</span>
+            <span class="tool">ports 80 · 443 · 30000</span>
+            <span class="tool">loopback only</span>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:22px">
+      <article class="card rv">
+        <h3><span class="ico">↻</span> Idempotent by design</h3>
+        <p>
+          <code>make up</code> twice is a no-op, and it refuses to report success on a half-built
+          cluster — it probes the API server rather than trusting that the cluster is merely
+          <em>listed</em>. A partial <code>kind create</code> leaves containers behind that would
+          otherwise look healthy.
+        </p>
+      </article>
+      <article class="card rv">
+        <h3><span class="ico">⛨</span> Safe teardown</h3>
+        <p>
+          Teardown is scoped by kind cluster <em>name</em>, so it is structurally incapable of
+          touching a real cluster. It still warns when your current context points somewhere
+          unexpected — a surprised operator is worth catching even when nothing is at risk.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EXCLUSIONS ================= -->
+<section id="excluded">
+  <div class="wrap">
+    <div class="section-head rv">
+      <span class="eyebrow">Scope</span>
+      <h2>Deliberately excluded</h2>
+      <p class="lede">Each of these would have been easy to add and hard to justify.</p>
+    </div>
+    <div class="grid-2 two" id="excl"></div>
+  </div>
+</section>
+
+</main>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="brand" href="#top" style="margin-bottom:12px">
+          <span class="brand-mark">k</span><span class="n">kubernetes-platform</span>
+        </a>
+        <p class="foot-note">
+          A production-style internal developer platform, built in public across 15 cumulative
+          phases.
+        </p>
+      </div>
+      <div class="foot-links">
+        <div class="foot-col">
+          <h4>Repository</h4>
+          <a href="https://github.com/sameeralam3127/kubernetes-platform">Source</a>
+          <a href="https://github.com/sameeralam3127/kubernetes-platform/blob/main/ROADMAP.md">Roadmap</a>
+          <a href="https://github.com/sameeralam3127/kubernetes-platform/blob/main/CONTRIBUTING.md">Contributing</a>
+          <a href="https://github.com/sameeralam3127/kubernetes-platform/blob/main/SECURITY.md">Security policy</a>
+        </div>
+        <div class="foot-col">
+          <h4>Documentation</h4>
+          <a href="https://github.com/sameeralam3127/kubernetes-platform/blob/main/docs/local-development.md">Local development</a>
+          <a href="https://github.com/sameeralam3127/kubernetes-platform/tree/main/docs/decisions">Decision records</a>
+          <a href="https://github.com/sameeralam3127/kubernetes-platform/blob/main/infra/kind/README.md">Cluster topology</a>
+          <a href="https://github.com/sameeralam3127/kubernetes-platform/tree/main/runbooks">Runbooks</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span>MIT licensed · © 2026 Sameer Alam</span>
+      <span>Phase 1 of 15 · Kubernetes v1.36.1</span>
+    </div>
+  </div>
+</footer>
+
+<button class="top" id="toTop" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+</button>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
