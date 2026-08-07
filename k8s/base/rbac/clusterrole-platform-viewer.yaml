@@ -1,0 +1,63 @@
+# Cluster-wide read-only, for on-call and for anyone diagnosing a problem that
+# spans namespaces ("is this one app, or is the node unhealthy?").
+#
+# Kubernetes ships a built-in `view` ClusterRole, and this deliberately does not
+# use it: `view` grants read on Secrets in every namespace it is bound to, which
+# makes it unsuitable as a broad cluster-wide grant. This role reads the objects
+# needed to diagnose, and no secret material at all.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: platform-viewer
+  labels:
+    app.kubernetes.io/name: platform-viewer
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+  annotations:
+    platform.local/description: >-
+      Cluster-wide read-only for on-call. Explicitly excludes Secrets.
+rules:
+  - apiGroups: [""]
+    resources:
+      - namespaces
+      - nodes
+      - pods
+      - pods/log
+      - pods/status
+      - services
+      - endpoints
+      - configmaps
+      - events
+      - resourcequotas
+      - limitranges
+      - persistentvolumeclaims
+      - persistentvolumes
+      - serviceaccounts
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "ingressclasses", "networkpolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+  # Reading RBAC is how you answer "who can do this?" during an incident.
+  # Reading it confers no ability to change it.
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+    verbs: ["get", "list", "watch"]

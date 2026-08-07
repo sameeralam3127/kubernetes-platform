@@ -1,0 +1,53 @@
+# Per-container defaults and bounds for dev.
+#
+# Three jobs, in order of importance:
+#
+#  1. `defaultRequest`/`default` supply resources to containers that declare
+#     none. Without this, the ResourceQuota on requests.* would reject every
+#     unannotated pod with a message that does not explain itself.
+#  2. `max` stops one container claiming the entire namespace quota.
+#  3. `maxLimitRequestRatio` stops wildly over-committed containers — a pod
+#     requesting 10m and limited to 2 CPU schedules anywhere and then starves
+#     its neighbours. Capping the ratio keeps requests honest, which is what
+#     makes the scheduler's decisions meaningful.
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: container-limits
+  namespace: dev
+  labels:
+    app.kubernetes.io/name: container-limits
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/environment: dev
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      default:
+        cpu: 200m
+        memory: 256Mi
+      min:
+        cpu: 10m
+        memory: 16Mi
+      max:
+        cpu: "1"
+        memory: 1Gi
+      maxLimitRequestRatio:
+        cpu: "8"
+        memory: "4"
+
+    # Guards against a single oversized pod, and against PVCs large enough to
+    # fill the node's disk on a laptop.
+    - type: Pod
+      max:
+        cpu: "2"
+        memory: 2Gi
+
+    - type: PersistentVolumeClaim
+      min:
+        storage: 100Mi
+      max:
+        storage: 5Gi

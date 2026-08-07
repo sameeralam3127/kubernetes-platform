@@ -1,0 +1,23 @@
+# Platform-owned components: ingress, cert-manager, metrics-server, and later
+# the observability and policy stacks. Separated from workload namespaces so
+# platform components are never subject to a tenant's ResourceQuota — a full
+# dev quota must not be able to stop ingress from scheduling.
+#
+# No ResourceQuota is applied here on purpose. See k8s/base/governance/README.md.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-system
+  labels:
+    app.kubernetes.io/name: platform-system
+    app.kubernetes.io/part-of: kubernetes-platform
+    app.kubernetes.io/managed-by: kubectl
+    platform.local/tier: system
+    platform.local/owner: platform-team
+    # Pod Security Admission labels are added in Phase 8, once there are real
+    # workloads to test the profile against. See ROADMAP.md.
+  annotations:
+    platform.local/description: >-
+      Cluster-wide platform components. Not for application workloads.
+    platform.local/phase: "2"

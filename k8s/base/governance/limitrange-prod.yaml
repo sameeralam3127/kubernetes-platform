@@ -1,0 +1,44 @@
+# Per-container defaults and bounds for prod.
+#
+# Note the tighter `maxLimitRequestRatio` than dev/staging. Over-commitment is
+# tolerable where the blast radius is a developer's afternoon; in production it
+# is how a noisy neighbour takes out a node.
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: container-limits
+  namespace: prod
+  labels:
+    app.kubernetes.io/name: container-limits
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/environment: prod
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      default:
+        cpu: 500m
+        memory: 512Mi
+      min:
+        cpu: 10m
+        memory: 32Mi
+      max:
+        cpu: "4"
+        memory: 8Gi
+      maxLimitRequestRatio:
+        cpu: "4"
+        memory: "2"
+
+    - type: Pod
+      max:
+        cpu: "6"
+        memory: 12Gi
+
+    - type: PersistentVolumeClaim
+      min:
+        storage: 1Gi
+      max:
+        storage: 100Gi

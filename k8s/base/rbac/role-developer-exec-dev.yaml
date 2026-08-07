@@ -1,0 +1,27 @@
+# `kubectl exec` / `port-forward`, granted in dev only.
+#
+# Split into its own Role rather than folded into `developer` so the grant is
+# visible in `kubectl get roles` and obvious in review. Exec is a genuine
+# privilege escalation path: it runs arbitrary code as the pod's ServiceAccount,
+# inside the pod's network namespace, behind whatever NetworkPolicy protects it.
+#
+# In dev that is a reasonable debugging affordance. In staging and prod it is a
+# hole through the audit trail, so it is simply not granted there.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer-exec
+  namespace: dev
+  labels:
+    app.kubernetes.io/name: developer-exec
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/privileged: "true"
+  annotations:
+    platform.local/description: >-
+      Interactive access to running containers. Dev only, by design.
+rules:
+  - apiGroups: [""]
+    resources: ["pods/exec", "pods/portforward", "pods/attach"]
+    verbs: ["create", "get"]

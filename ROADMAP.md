@@ -8,8 +8,8 @@ you could show someone, not a half-finished refactor.
 
 | | Phase | Status |
 | --- | --- | --- |
-| 1 | [Foundation](#phase-1--foundation) | 🟡 **In progress** |
-| 2 | [Cluster basics](#phase-2--cluster-basics) | ⬜ Not started |
+| 1 | [Foundation](#phase-1--foundation) | ✅ Complete |
+| 2 | [Cluster basics](#phase-2--cluster-basics) | 🟡 **In progress** |
 | 3 | [Application deployment](#phase-3--application-deployment) | ⬜ Not started |
 | 4 | [Packaging and environment overlays](#phase-4--packaging-and-environment-overlays) | ⬜ Not started |
 | 5 | [CI/CD](#phase-5--cicd) | ⬜ Not started |
@@ -30,7 +30,7 @@ Legend: ✅ Complete · 🟡 In progress · ⬜ Not started
 
 ## Phase 1 — Foundation
 
-🟡 **In progress**
+✅ **Complete**
 
 **Objective.** A repository someone can clone and get a working multi-node
 Kubernetes cluster from, in one command, with the structure and governance in place
@@ -99,6 +99,8 @@ thing that separates "I used kind" from "I chose kind, and here is what it cost 
 
 ## Phase 2 — Cluster basics
 
+🟡 **In progress**
+
 **Objective.** Turn an empty cluster into a multi-tenant-shaped platform with
 guardrails, before any application exists to bend them.
 
@@ -115,22 +117,50 @@ needs to be reachable and measurable.
 - ingress-nginx, metrics-server, cert-manager installed via `scripts/install-addons.sh`.
 - First `examples/` workloads demonstrating a quota rejection and RBAC boundaries.
 
-**Files created.** `k8s/base/{namespaces,rbac,quotas}/*.yaml`,
-`scripts/install-addons.sh`, `docs/architecture.md`,
-`examples/{hello-workload,quota-limits,rbac-demo}/`, `diagrams/platform-overview.mmd`
+**Files created.**
+`k8s/base/{kustomization.yaml,namespaces/,governance/,rbac/}`,
+`k8s/addons/{clusterissuer-selfsigned.yaml,values/*.yaml}`,
+`scripts/{apply-base.sh,install-addons.sh,verify-platform.sh}`,
+`docs/architecture.md`, `diagrams/platform-overview.mmd`,
+`examples/{hello-workload,quota-limits,rbac-demo}/`
 
-**Files modified.** `Makefile` (`make addons` becomes real), `k8s/README.md`,
-`examples/README.md`, this file.
+**Files modified.** `Makefile` (`apply-base`, `addons`, `bootstrap`, `demo`,
+`lint-manifests`, `verify-platform` become real), `scripts/lib/common.sh`
+(SIGPIPE fix in `cluster_exists`), `k8s/README.md`, `scripts/README.md`,
+`examples/README.md`, `README.md`, this file.
 
-**Tools.** kubectl, Helm (for addons), cert-manager, ingress-nginx, metrics-server.
+**Tools.** kubectl, Kustomize, Helm, ingress-nginx 4.15.1, metrics-server 3.13.1,
+cert-manager v1.21.1.
 
 **Acceptance criteria**
 
-- Every namespace has a quota and a limit range.
-- `kubectl auth can-i` output proves the developer role cannot escalate.
-- A pod exceeding quota is rejected with a comprehensible message.
-- An ingress resource serves traffic at `http://localhost`.
-- `make addons` is idempotent.
+- [x] Four namespaces exist with ownership labels; `platform-system` deliberately
+      has **no** ResourceQuota, so a tenant cannot starve the ingress controller.
+- [x] Every workload namespace has a ResourceQuota **and** a LimitRange.
+- [x] A 3 CPU container is refused in `dev` by the LimitRange, reporting all
+      violations at once.
+- [x] A pod declaring **no** resources is still admitted, because the LimitRange
+      supplies defaults — the guardrail stops the dangerous thing, not the
+      ordinary thing.
+- [x] `kubectl auth can-i` proves the developer persona cannot create secrets,
+      edit RBAC, raise its own quota, create namespaces, or delete nodes.
+- [x] One identity per persona, bound across namespaces with different Roles —
+      so "writes to dev, reads prod" is true of a person, not a coincidence
+      between three accounts.
+- [x] Production is read-only for humans; `exec` is granted in `dev` only.
+- [x] CI can write to `dev` and nowhere else, with no secrets, delete, or exec.
+- [x] Nothing in the repository binds `cluster-admin`, `edit`, or `admin`.
+- [x] ingress-nginx serves `http://localhost`; `examples/hello-workload` returns
+      HTTP 200 with replicas spread across both workers.
+- [x] `kubectl top nodes` returns metrics; `ClusterIssuer/selfsigned` is Ready.
+- [x] `make addons` and `make apply-base` are idempotent, and both refuse to run
+      against a non-kind context.
+- [x] `make verify-platform` passes 40/40 deterministically.
+
+**Carried forward.** Namespaces intentionally carry no Pod Security Admission
+labels and there are **no NetworkPolicies**, so the workload namespaces have no
+network isolation between them. Both land in Phase 8, once there are real
+workloads to test a `restricted` profile against.
 
 **Demo value.** Show a deploy being *refused* — guardrails you can see working are
 more convincing than guardrails you are told about.

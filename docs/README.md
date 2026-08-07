@@ -27,12 +27,12 @@ architecture is a bad runbook.
 | --- | --- |
 | [local-development.md](local-development.md) | ✅ Phase 1 |
 | [decisions/](decisions/) (ADRs) | ✅ Phase 1, ongoing |
+| [architecture.md](architecture.md) | ✅ Phase 2 |
 
 ## Planned
 
 | Document | Phase |
 | --- | --- |
-| `architecture.md` — layered architecture with data flow | 2 |
 | `developer-guide.md` — how an app team ships onto the platform | 3 |
 | `environments.md` — dev/staging/prod overlay model and promotion flow | 4 |
 | `ci-cd.md` — pipeline stages and gate rationale | 5 |

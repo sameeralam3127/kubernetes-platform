@@ -1,0 +1,31 @@
+# Routed at http://localhost/hello via the host ports mapped in
+# infra/kind/cluster.yaml to the ingress-ready control-plane node.
+#
+# No TLS here on purpose: cert-manager is installed and the ClusterIssuer is
+# Ready, but issuing a certificate for `localhost` produces a browser warning
+# that teaches nothing. examples/ingress-tls/ (Phase 3) demonstrates the
+# certificate lifecycle properly against a real hostname.
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello
+  labels:
+    app.kubernetes.io/name: hello
+    app.kubernetes.io/instance: hello
+    app.kubernetes.io/part-of: kubernetes-platform
+  annotations:
+    # Strip the /hello prefix before proxying, so the backend sees "/".
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /hello(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: hello
+                port:
+                  name: http

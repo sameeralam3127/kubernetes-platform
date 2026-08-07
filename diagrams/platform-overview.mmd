@@ -1,0 +1,22 @@
+flowchart LR
+    USER(["Browser"]) -->|"http://localhost"| ING
+    DEVP(["developer"])
+    CIP(["ci-deployer"])
+
+    subgraph CLUSTER["kind cluster — 1 control-plane + 2 workers"]
+        direction TB
+        ING["<b>ingress-nginx</b> · platform-system<br>hostPort 80/443 on the ingress-ready node"]
+        SUP["<b>cert-manager</b> · <b>metrics-server</b> · platform-system<br>no ResourceQuota here, by design"]
+        DEVNS["<b>dev</b> — 2 CPU / 4Gi · 15 pods"]
+        STG["<b>staging</b> — 4 CPU / 8Gi · 25 pods"]
+        PROD["<b>prod</b> — 8 CPU / 16Gi · 40 pods"]
+        ING --> DEVNS
+    end
+
+    DEVP -->|"write + exec"| DEVNS
+    DEVP -->|"write, no exec"| STG
+    DEVP -.->|"read only"| PROD
+    CIP -->|"deploy"| DEVNS
+
+    classDef live stroke:#22c55e,stroke-width:2px
+    class ING,SUP,DEVNS,STG,PROD live

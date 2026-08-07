@@ -1,0 +1,20 @@
+# Production environment.
+#
+# On the local kind cluster this will not run at full size — a ResourceQuota is
+# a cap, not a reservation, so the manifest stays honest about production intent
+# while the laptop simply never reaches the ceiling.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod
+  labels:
+    app.kubernetes.io/name: prod
+    app.kubernetes.io/part-of: kubernetes-platform
+    app.kubernetes.io/managed-by: kubectl
+    platform.local/tier: workload
+    platform.local/environment: prod
+    platform.local/owner: app-team
+  annotations:
+    platform.local/description: "Production workloads. Strictest change control (Phase 6)."
+    platform.local/phase: "2"

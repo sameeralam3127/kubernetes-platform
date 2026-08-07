@@ -1,0 +1,12 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Namespaces are created before anything that lives in them. When Argo CD takes
+# over in Phase 6 this ordering becomes a sync wave; until then it is the order
+# of the parent kustomization.
+resources:
+  - namespace-platform-system.yaml
+  - namespace-dev.yaml
+  - namespace-staging.yaml
+  - namespace-prod.yaml

@@ -1,0 +1,20 @@
+# Development environment.
+#
+# Smallest quota of the three, deliberately: dev is where a quota rejection is
+# demonstrated (examples/quota-limits/), and a guardrail you can watch reject a
+# deploy is worth more than one described in a README.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+  labels:
+    app.kubernetes.io/name: dev
+    app.kubernetes.io/part-of: kubernetes-platform
+    app.kubernetes.io/managed-by: kubectl
+    platform.local/tier: workload
+    platform.local/environment: dev
+    platform.local/owner: app-team
+  annotations:
+    platform.local/description: "Development workloads. Fast feedback, smallest quota."
+    platform.local/phase: "2"

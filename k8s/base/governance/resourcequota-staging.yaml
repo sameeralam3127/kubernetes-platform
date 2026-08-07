@@ -1,0 +1,30 @@
+# Compute and object caps for staging.
+#
+# Roughly double dev. Staging is a gate, and a gate sized like dev tells you
+# nothing about whether a release survives production-shaped load.
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: staging
+  labels:
+    app.kubernetes.io/name: compute-quota
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/environment: staging
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+
+    pods: "25"
+    services: "15"
+    services.loadbalancers: "0"
+    configmaps: "30"
+    secrets: "30"
+    persistentvolumeclaims: "10"
+    count/jobs.batch: "15"
+    count/cronjobs.batch: "10"
+    count/deployments.apps: "15"

@@ -1,0 +1,26 @@
+# Kustomize base for the platform.
+#
+# This is the base that kustomize/overlays/{dev,staging,prod}/ patch in Phase 4,
+# and that Argo CD syncs from in Phase 6. There is no separate copy of these
+# manifests anywhere — the raw layer *is* the base layer.
+#
+# Order matters on first apply: namespaces must exist before the quotas, limit
+# ranges, and role bindings that live inside them. Kustomize sorts resources by
+# kind and puts Namespace first, so `kubectl apply -k` handles this correctly;
+# from Phase 6 the same ordering is expressed explicitly as Argo CD sync waves.
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespaces/
+  - governance/
+  - rbac/
+
+# Applied to every resource in the base, so provenance is greppable and
+# dashboards/cost attribution work later without a relabelling migration.
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: kubernetes-platform
+      platform.local/phase: "2"

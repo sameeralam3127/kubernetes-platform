@@ -1,0 +1,19 @@
+# Staging environment.
+#
+# Sized production-shaped rather than dev-shaped: staging only means something
+# as a gate if it behaves like prod. See kustomize/README.md.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+  labels:
+    app.kubernetes.io/name: staging
+    app.kubernetes.io/part-of: kubernetes-platform
+    app.kubernetes.io/managed-by: kubectl
+    platform.local/tier: workload
+    platform.local/environment: staging
+    platform.local/owner: app-team
+  annotations:
+    platform.local/description: "Pre-production gate. Production-shaped, not dev-shaped."
+    platform.local/phase: "2"

@@ -1,0 +1,66 @@
+# Developer persona in dev — full workload management.
+#
+# The shape of this Role is the point of the phase, so the exclusions are as
+# deliberate as the grants:
+#
+#  · No `secrets` write. Read is granted because debugging a broken mount
+#    without it is miserable; write is not, because from Phase 8 secrets come
+#    from External Secrets and a human editing one causes silent drift.
+#  · No RBAC verbs. A role that can edit roles is cluster-admin with extra steps.
+#  · No `resourcequotas`/`limitranges` write. A guardrail you can raise yourself
+#    is not a guardrail.
+#  · Nothing cluster-scoped — no namespaces, no nodes.
+#
+# `pods/exec` is granted separately in role-developer-exec-dev.yaml so the
+# privilege is visible rather than buried in this rule list.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer
+  namespace: dev
+  labels:
+    app.kubernetes.io/name: developer
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/environment: dev
+rules:
+  # Workload management — the day job.
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["services", "configmaps", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Debugging — read pods and logs, and delete a pod to force a restart.
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/status", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["delete"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+
+  # Read-only visibility into the guardrails, so "why was I rejected?" is
+  # answerable without asking the platform team.
+  - apiGroups: [""]
+    resources: ["resourcequotas", "limitranges"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]

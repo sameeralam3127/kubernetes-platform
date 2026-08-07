@@ -1,0 +1,25 @@
+# Declares no resources at all — and is admitted anyway, because the dev
+# LimitRange supplies defaults.
+#
+# Without those defaults the ResourceQuota on requests.* would reject this pod,
+# because a quota on requests means every pod must declare them. The guardrail
+# should stop the dangerous thing, not the ordinary thing.
+#
+# Verify what was injected:
+#   kubectl -n dev get pod no-resources -o jsonpath='{.spec.containers[0].resources}' | jq
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-resources
+  namespace: dev
+  labels:
+    app.kubernetes.io/name: no-resources
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/example: quota-limits
+spec:
+  restartPolicy: Never
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause:3.10
+      # Intentionally no `resources:` block.

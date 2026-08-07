@@ -1,0 +1,128 @@
+# A minimal workload that satisfies every rule the platform will enforce.
+#
+# This is the reference for "what a compliant Deployment looks like here". Every
+# field below is present because a guardrail requires it — from Phase 8, Kyverno
+# rejects manifests missing resource limits, probes, or the recommended labels,
+# so this is what passing admission looks like.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+  labels:
+    app.kubernetes.io/name: hello
+    app.kubernetes.io/instance: hello
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: kubernetes-platform
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hello
+      app.kubernetes.io/instance: hello
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hello
+        app.kubernetes.io/instance: hello
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: kubernetes-platform
+    spec:
+      # Spread across both workers. On a single-node cluster this would be a
+      # no-op, which is why infra/kind/cluster.yaml provisions two.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: hello
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101          # nginx-unprivileged's own uid
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: hello
+          # Unprivileged nginx: binds :8080 rather than :80, so it needs no
+          # NET_BIND_SERVICE capability. Pinned by digest — no :latest, ever.
+          image: nginxinc/nginx-unprivileged:1.27-alpine
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          # Requests and limits are both set. Without requests the scheduler is
+          # guessing; without limits one pod can starve its neighbours. The
+          # dev LimitRange would supply defaults, but relying on that is how
+          # workloads end up mis-sized in an environment that has no LimitRange.
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 96Mi
+
+          # Liveness and readiness answer different questions and must not be
+          # the same probe:
+          #   readiness — "should traffic go here right now?"
+          #   liveness  — "is this process wedged and in need of a restart?"
+          # Wiring liveness to a dependency check is how one slow database
+          # restarts every pod in the fleet.
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 2
+            failureThreshold: 30   # 60s to start before liveness takes over
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+
+          # A read-only root filesystem means enumerating every path the process
+          # genuinely needs to write, rather than leaving the whole filesystem
+          # open because one directory needs it.
+          #
+          # nginx needs all three. Miss /tmp and the container starts, logs
+          # "Configuration complete; ready for start up", and *then* dies with
+          # `mkdir() "/tmp/proxy_temp" failed (30: Read-only file system)` —
+          # which reads like a crash loop rather than a permissions problem.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp              # proxy_temp, client_temp, fastcgi_temp
+            - name: cache
+              mountPath: /var/cache/nginx  # response cache
+            - name: run
+              mountPath: /var/run          # pid file
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+
+      # Give the process time to finish in-flight requests on SIGTERM.
+      terminationGracePeriodSeconds: 30

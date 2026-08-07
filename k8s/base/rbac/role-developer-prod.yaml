@@ -1,0 +1,56 @@
+# Developer persona in prod — read-only.
+#
+# From Phase 6, production changes arrive through Git and Argo CD. A human with
+# write access to prod is a bypass of that pipeline, and the pipeline *is* the
+# audit trail — "who changed this?" has to be answerable from `git log`.
+#
+# Read access is deliberately generous: on-call must be able to see everything
+# that is running, and refusing that just means someone keeps a break-glass
+# admin kubeconfig in a drawer, which is strictly worse.
+#
+# Note there is no read on `secrets` here either, unlike dev and staging.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer
+  namespace: prod
+  labels:
+    app.kubernetes.io/name: developer
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/environment: prod
+  annotations:
+    platform.local/description: >-
+      Read-only. Production changes go through Git and Argo CD from Phase 6.
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - services
+      - configmaps
+      - persistentvolumeclaims
+      - pods
+      - pods/log
+      - pods/status
+      - events
+      - resourcequotas
+      - limitranges
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]

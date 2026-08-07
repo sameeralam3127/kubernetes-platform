@@ -1,0 +1,38 @@
+# Compute and object caps for dev.
+#
+# Deliberately the tightest of the three environments so that a quota rejection
+# is demonstrable rather than theoretical — see examples/quota-limits/.
+#
+# A ResourceQuota on requests.* means every pod MUST declare requests. Rather
+# than rejecting unannotated pods, limitrange-dev.yaml supplies defaults, so the
+# quota is enforced without making the namespace hostile to use.
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: dev
+  labels:
+    app.kubernetes.io/name: compute-quota
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/environment: dev
+spec:
+  hard:
+    # Compute. Requests are what the scheduler reserves; limits are the ceiling.
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+
+    # Object counts. These matter more than people expect: runaway controllers
+    # create objects, not just pods, and etcd is the shared resource that
+    # actually suffers.
+    pods: "15"
+    services: "10"
+    services.loadbalancers: "0"   # no cloud LB on kind; fail loudly, not silently
+    configmaps: "20"
+    secrets: "20"
+    persistentvolumeclaims: "5"
+    count/jobs.batch: "10"
+    count/cronjobs.batch: "5"
+    count/deployments.apps: "10"

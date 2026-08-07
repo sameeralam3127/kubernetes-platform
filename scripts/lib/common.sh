@@ -72,8 +72,17 @@ require_cmd() {
 }
 
 # True if a kind cluster with CLUSTER_NAME currently exists.
+#
+# Deliberately NOT `kind get clusters | grep -qx ...`. Under `set -o pipefail`,
+# `grep -q` exits the moment it matches, which closes the pipe and kills the
+# upstream command with SIGPIPE (exit 141). pipefail then reports the whole
+# pipeline as failed *even though the match succeeded* — non-deterministically,
+# depending on whether the writer had already finished. Capturing first and
+# matching against a here-string removes the pipe, and with it the race.
 cluster_exists() {
-  kind get clusters 2>/dev/null | grep -qx "${CLUSTER_NAME}"
+  local clusters
+  clusters="$(kind get clusters 2>/dev/null || true)"
+  grep -qx "${CLUSTER_NAME}" <<<"${clusters}"
 }
 
 # Refuse to run destructive operations against anything that is not our own kind

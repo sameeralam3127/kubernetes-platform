@@ -17,7 +17,7 @@ SCRIPTS := ./scripts
 
 .PHONY: help
 help: ## Show this help
-	@printf '\n\033[1mkubernetes-platform\033[0m — Phase 1 (Foundation)\n\n'
+	@printf '\n\033[1mkubernetes-platform\033[0m — Phase 2 (Cluster basics)\n\n'
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| sort \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -56,34 +56,81 @@ context: ## Switch kubectl to this cluster's context
 	@kubectl config use-context kind-$(CLUSTER_NAME)
 
 # ---------------------------------------------------------------------------
+# Platform (Phase 2)
+# ---------------------------------------------------------------------------
+
+.PHONY: apply-base
+apply-base: ## Apply namespaces, quotas, limit ranges, and RBAC
+	@$(SCRIPTS)/apply-base.sh
+
+.PHONY: addons
+addons: ## Install ingress-nginx, metrics-server, cert-manager
+	@$(SCRIPTS)/install-addons.sh
+
+.PHONY: bootstrap
+bootstrap: up apply-base addons ## Cluster + base + addons, from nothing, in one command
+	@printf '\n\033[32mPlatform ready.\033[0m Try: make demo\n\n'
+
+.PHONY: diff-base
+diff-base: ## Show what applying the base would change
+	@$(SCRIPTS)/apply-base.sh --diff
+
+.PHONY: demo
+demo: ## Run the Phase 2 examples (quota rejection, RBAC boundaries)
+	@$(SCRIPTS)/verify-platform.sh --demo
+
+# ---------------------------------------------------------------------------
 # Quality
 # ---------------------------------------------------------------------------
 
 .PHONY: lint
-lint: lint-shell ## Run all available linters (grows each phase)
+lint: lint-shell lint-manifests ## Run all available linters (grows each phase)
 
 .PHONY: lint-shell
-lint-shell: ## Shellcheck all scripts
+lint-shell: ## Shellcheck every script in the repo
 	@command -v shellcheck >/dev/null 2>&1 \
 		|| { echo "shellcheck not installed (brew install shellcheck)"; exit 1; }
-	@shellcheck --severity=style $(SCRIPTS)/*.sh $(SCRIPTS)/lib/*.sh
+	@shellcheck --severity=style $(SCRIPTS)/*.sh $(SCRIPTS)/lib/*.sh examples/*/*.sh
 	@echo "shellcheck: clean"
 
+.PHONY: lint-manifests
+lint-manifests: ## Validate that every kustomization builds and every YAML parses
+	@# Deliberately cluster-independent: a lint target whose result depends on
+	@# what happens to be installed is useless in CI. `kubectl apply
+	@# --dry-run=client` needs a RESTMapping, so it fails on CRD instances like
+	@# ClusterIssuer unless cert-manager is already present — hence YAML-level
+	@# parsing here, and real schema validation via kubeconform in Phase 5.
+	@kubectl kustomize k8s/base >/dev/null && echo "k8s/base: builds"
+	@for d in examples/*/; do \
+		[ -f "$$d/kustomization.yaml" ] || continue; \
+		kubectl kustomize "$$d" >/dev/null && echo "$${d%/}: builds"; \
+	done
+	@fail=0; n=0; \
+	for f in $$(find k8s examples -name '*.yaml'); do \
+		n=$$((n+1)); \
+		ruby -ryaml -e 'YAML.load_stream(File.read(ARGV[0]))' "$$f" 2>/dev/null \
+			|| { echo "  YAML parse failed: $$f"; fail=1; }; \
+	done; \
+	[ $$fail -eq 0 ] && echo "manifests: $$n YAML files parse" || exit 1
+
+.PHONY: verify-platform
+verify-platform: ## Assert namespaces, quotas, RBAC and addons behave correctly
+	@$(SCRIPTS)/verify-platform.sh
+
 .PHONY: verify
-verify: ## Full Phase 1 acceptance check: clean bootstrap, healthy, teardown
+verify: ## Full acceptance check: clean bootstrap, platform, teardown
 	@$(SCRIPTS)/cluster-up.sh --recreate --yes
 	@$(SCRIPTS)/cluster-status.sh
+	@$(MAKE) --no-print-directory apply-base
+	@$(SCRIPTS)/install-addons.sh
+	@$(SCRIPTS)/verify-platform.sh
 	@$(SCRIPTS)/cluster-down.sh --yes
-	@echo "Phase 1 acceptance: PASS"
+	@echo "Phase 1-2 acceptance: PASS"
 
 # ---------------------------------------------------------------------------
 # Placeholders — each becomes real in the phase noted. Listed so the roadmap is
 # visible from the command line, not only in ROADMAP.md.
 # ---------------------------------------------------------------------------
-
-.PHONY: addons
-addons: ## [Phase 2] Install ingress-nginx, metrics-server, cert-manager
-	@echo "Not implemented yet — Phase 2. See ROADMAP.md"; exit 1
 
 .PHONY: deploy
 deploy: ## [Phase 3] Deploy sample applications

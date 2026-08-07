@@ -1,0 +1,79 @@
+# ingress-nginx values for the local kind cluster.
+#
+# The shape of this file is dictated by kind having no cloud controller: a
+# Service of type LoadBalancer would sit Pending forever, so the controller
+# binds host ports on the node that infra/kind/cluster.yaml maps 80/443 to.
+#
+# Phase 10 replaces this file with a cloud variant where `service.type` becomes
+# LoadBalancer and hostPort is switched off. Keeping the difference in a values
+# file rather than in the chart is precisely what makes that swap a one-file
+# change.
+---
+controller:
+  # Bind :80/:443 directly on the node. Paired with the extraPortMappings in
+  # infra/kind/cluster.yaml, this makes http://localhost reach the cluster.
+  hostPort:
+    enabled: true
+    ports:
+      http: 80
+      https: 443
+
+  service:
+    type: ClusterIP   # not LoadBalancer — see the note above
+
+  # Pin to the node labelled ingress-ready=true (the control plane, per
+  # infra/kind/cluster.yaml). Quoted because nodeSelector values are strings;
+  # an unquoted true here is a boolean and the API server rejects it.
+  nodeSelector:
+    ingress-ready: "true"
+    kubernetes.io/os: linux
+
+  # The control plane carries a NoSchedule taint by default.
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+      effect: NoSchedule
+
+  ingressClassResource:
+    name: nginx
+    enabled: true
+    default: true
+  # Adopt Ingresses that predate the ingressClass convention rather than
+  # silently ignoring them — silent non-routing is a miserable thing to debug.
+  watchIngressWithoutClass: true
+
+  # Validating webhook catches a malformed Ingress at admission instead of
+  # letting it break the running config.
+  admissionWebhooks:
+    enabled: true
+
+  # A single replica is correct here: the controller is pinned to one node via
+  # hostPort, so a second replica would be unschedulable.
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Prometheus scrapes these from Phase 7. Enabling it now costs nothing and
+  # means the metrics exist the moment there is something to scrape them.
+  metrics:
+    enabled: true
+
+  config:
+    # Surface the real client IP rather than the proxy's.
+    use-forwarded-headers: "true"
+    # Structured access logs, so Phase 7 does not need a regex parser.
+    log-format-escape-json: "true"
+    log-format-upstream: >-
+      {"time":"$time_iso8601","remote_addr":"$remote_addr","request":"$request",
+      "status":$status,"bytes":$body_bytes_sent,"duration":$request_time,
+      "upstream_status":"$upstream_status","namespace":"$namespace",
+      "service":"$service_name","ingress":"$ingress_name"}

@@ -6,7 +6,7 @@ Every script here is meant to be run by a human on a laptop or by CI. They are
 deliberately plain `bash` with no framework: a script an interviewer can read top to
 bottom in 60 seconds is worth more than a clever one.
 
-## Available now (Phase 1)
+## Available now (Phases 1–2)
 
 | Script | Purpose |
 | --- | --- |
@@ -14,10 +14,13 @@ bottom in 60 seconds is worth more than a clever one.
 | [`cluster-up.sh`](cluster-up.sh) | Create the local kind cluster from [`infra/kind/cluster.yaml`](../infra/kind/cluster.yaml) and wait until it is genuinely ready. |
 | [`cluster-down.sh`](cluster-down.sh) | Delete the local kind cluster. |
 | [`cluster-status.sh`](cluster-status.sh) | Show nodes, system pods, and the active context. |
+| [`apply-base.sh`](apply-base.sh) | Apply `k8s/base` — namespaces, quotas, limit ranges, RBAC. Guarded. |
+| [`install-addons.sh`](install-addons.sh) | Install ingress-nginx, metrics-server, cert-manager at pinned versions. Guarded, idempotent. |
+| [`verify-platform.sh`](verify-platform.sh) | 40 assertions that *try to break* the guardrails and fail if they succeed. |
 | [`lib/common.sh`](lib/common.sh) | Shared logging, guards, and helpers. Sourced, not executed. |
 
-Most people should use the [`Makefile`](../Makefile) targets (`make up`, `make down`,
-`make status`) rather than calling these directly.
+Most people should use the [`Makefile`](../Makefile) targets (`make bootstrap`,
+`make verify-platform`, `make down`) rather than calling these directly.
 
 ## Conventions
 
@@ -50,7 +53,6 @@ back:
 
 | Script | Phase |
 | --- | --- |
-| `install-addons.sh` — ingress-nginx, metrics-server, cert-manager | 2 |
 | `bootstrap-argocd.sh` — install Argo CD and apply the root Application | 6 |
 | `port-forward.sh` — Grafana / Argo CD / Prometheus UIs | 7 |
 | `load-test.sh` — k6 traffic to drive HPA and SLO dashboards | 9 |

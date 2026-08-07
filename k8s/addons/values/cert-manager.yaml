@@ -1,0 +1,47 @@
+# cert-manager values.
+#
+# Deliberately close to upstream defaults — cert-manager is one of the few
+# components where the defaults are genuinely right, and every deviation is
+# something to justify later.
+---
+# Install CRDs with the chart. The alternative (applying CRDs separately) exists
+# so that `helm uninstall` cannot delete the CRDs and every Certificate with
+# them. That matters on a cluster you cannot rebuild; here, `make recreate`
+# takes three minutes, so the simpler path wins.
+crds:
+  enabled: true
+  keep: true
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 48Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+webhook:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+cainjector:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+# Scraped by Prometheus from Phase 7. Certificate expiry is one of the few
+# alerts worth having before there is any traffic to alert on.
+prometheus:
+  enabled: true
+  servicemonitor:
+    # Flipped on in Phase 7, once a ServiceMonitor CRD exists to create.
+    enabled: false

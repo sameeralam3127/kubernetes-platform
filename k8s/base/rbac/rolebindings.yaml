@@ -1,0 +1,130 @@
+# Bindings — which identity gets which Role, in which namespace.
+#
+# Every subject below is the *same* ServiceAccount from platform-system. The
+# per-environment difference lives entirely in which Role it is bound to, which
+# is what makes "writes to dev, reads prod" a true statement about one identity
+# rather than a coincidence between three.
+#
+# Every binding here is a RoleBinding (namespace-scoped) except the deliberate
+# read-only ClusterRoleBinding at the bottom. Nothing in this repository binds
+# `cluster-admin`, `edit`, or `admin`.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer
+  namespace: dev
+  labels:
+    app.kubernetes.io/name: developer
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+subjects:
+  - kind: ServiceAccount
+    name: developer
+    namespace: platform-system
+  # In Phase 10 this becomes the OIDC group instead. Left commented rather than
+  # deleted so the migration path is visible.
+  # - kind: Group
+  #   name: platform:developers
+  #   apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
+---
+# exec, granted in dev only. Separate binding so the privilege is visible in
+# `kubectl get rolebindings` rather than buried in a rule list.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-exec
+  namespace: dev
+  labels:
+    app.kubernetes.io/name: developer-exec
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/privileged: "true"
+subjects:
+  - kind: ServiceAccount
+    name: developer
+    namespace: platform-system
+roleRef:
+  kind: Role
+  name: developer-exec
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer
+  namespace: staging
+  labels:
+    app.kubernetes.io/name: developer
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+subjects:
+  - kind: ServiceAccount
+    name: developer
+    namespace: platform-system
+roleRef:
+  kind: Role
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer
+  namespace: prod
+  labels:
+    app.kubernetes.io/name: developer
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+subjects:
+  - kind: ServiceAccount
+    name: developer
+    namespace: platform-system
+roleRef:
+  kind: Role
+  name: developer          # the prod Role is read-only
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer
+  namespace: dev
+  labels:
+    app.kubernetes.io/name: ci-deployer
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+subjects:
+  - kind: ServiceAccount
+    name: ci-deployer
+    namespace: platform-system
+roleRef:
+  kind: Role
+  name: ci-deployer
+  apiGroup: rbac.authorization.k8s.io
+---
+# The one cluster-scoped binding in the platform, and it is read-only.
+#
+# This is the split the whole RBAC model rests on: cluster-wide *visibility*,
+# namespace-scoped *authority*. During an incident "is this one app or is the
+# node unhealthy?" must be answerable without escalating.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: platform-viewer
+  labels:
+    app.kubernetes.io/name: platform-viewer
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+subjects:
+  - kind: ServiceAccount
+    name: developer
+    namespace: platform-system
+roleRef:
+  kind: ClusterRole
+  name: platform-viewer
+  apiGroup: rbac.authorization.k8s.io

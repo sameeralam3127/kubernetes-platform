@@ -1,0 +1,43 @@
+# Per-container defaults and bounds for staging.
+#
+# Wider ceilings than dev so production-shaped workloads fit, same ratio
+# discipline so requests stay honest.
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: container-limits
+  namespace: staging
+  labels:
+    app.kubernetes.io/name: container-limits
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/environment: staging
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      default:
+        cpu: 500m
+        memory: 512Mi
+      min:
+        cpu: 10m
+        memory: 16Mi
+      max:
+        cpu: "2"
+        memory: 2Gi
+      maxLimitRequestRatio:
+        cpu: "8"
+        memory: "4"
+
+    - type: Pod
+      max:
+        cpu: "3"
+        memory: 4Gi
+
+    - type: PersistentVolumeClaim
+      min:
+        storage: 100Mi
+      max:
+        storage: 10Gi

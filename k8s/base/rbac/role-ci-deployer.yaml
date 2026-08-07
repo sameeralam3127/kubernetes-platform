@@ -1,0 +1,43 @@
+# CI persona — what the pipeline is allowed to do, and where.
+#
+# Scoped to dev only. From Phase 6 nothing reaches staging or prod by pipeline
+# push at all: CI writes an image digest to Git, and Argo CD reconciles. CI
+# therefore never needs credentials for the environments that matter, which
+# removes the most valuable thing an attacker could steal from a build runner.
+#
+# Note there is no `create` on `secrets` and no `escalate`/`bind` on RBAC.
+# A CI account that can mint RoleBindings can grant itself anything.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-deployer
+  namespace: dev
+  labels:
+    app.kubernetes.io/name: ci-deployer
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: kubernetes-platform
+  annotations:
+    platform.local/description: >-
+      Pipeline deploy rights, dev only. Staging and prod go through Git (Phase 6).
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["services", "configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # Read-only on pods so the pipeline can wait for a rollout and report failure
+  # with real output instead of a timeout.
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/status", "replicasets"]
+    verbs: ["get", "list", "watch"]

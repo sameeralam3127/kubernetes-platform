@@ -1,0 +1,13 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - serviceaccounts.yaml
+  - clusterrole-platform-viewer.yaml
+  - role-developer-dev.yaml
+  - role-developer-staging.yaml
+  - role-developer-prod.yaml
+  - role-developer-exec-dev.yaml
+  - role-ci-deployer.yaml
+  - rolebindings.yaml

@@ -1,0 +1,32 @@
+# Compute and object caps for prod.
+#
+# Sized for production intent, not for this laptop. A ResourceQuota is a cap and
+# not a reservation, so nothing is wasted by declaring a ceiling the local kind
+# cluster will never approach — and the manifest stays truthful when Phase 10
+# moves it to a managed cluster that can.
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: prod
+  labels:
+    app.kubernetes.io/name: compute-quota
+    app.kubernetes.io/part-of: kubernetes-platform
+    platform.local/environment: prod
+spec:
+  hard:
+    requests.cpu: "8"
+    requests.memory: 16Gi
+    limits.cpu: "16"
+    limits.memory: 32Gi
+
+    pods: "40"
+    services: "20"
+    services.loadbalancers: "2"   # a real cloud LB is expected here from Phase 10
+    configmaps: "40"
+    secrets: "40"
+    persistentvolumeclaims: "20"
+    count/jobs.batch: "20"
+    count/cronjobs.batch: "10"
+    count/deployments.apps: "20"

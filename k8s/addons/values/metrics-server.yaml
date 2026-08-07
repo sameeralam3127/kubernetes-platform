@@ -1,0 +1,30 @@
+# metrics-server values for the local kind cluster.
+#
+# ⚠️  LOCAL-ONLY CONCESSION — must not survive to Phase 10.
+#
+# kind's kubelets serve their metrics endpoint with self-signed certificates
+# that are not in the cluster CA, so metrics-server cannot verify them and every
+# scrape fails. `--kubelet-insecure-tls` disables that verification.
+#
+# On a managed cluster the kubelet serving certificates are properly signed and
+# this flag is both unnecessary and a genuine downgrade — it would let anything
+# that can impersonate a kubelet feed false metrics to the HPA. Phase 10 removes
+# it, and docs/architecture.md tracks it as a known local/cloud divergence.
+---
+args:
+  - --kubelet-insecure-tls
+  # Prefer the node's InternalIP; kind nodes have no resolvable hostname.
+  - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 200Mi
+
+# Single replica: this is a local cluster, and metrics-server being briefly
+# unavailable degrades `kubectl top` and HPA decisions rather than serving
+# traffic. Phase 10 raises this for the managed cluster.
+replicas: 1

@@ -6,7 +6,7 @@
 GitOps delivery · policy enforced at admission · tested backups · verified resilience.
 
 [![Live site](https://img.shields.io/badge/docs-sameeralam3127.github.io-326ce5?style=flat-square)](https://sameeralam3127.github.io/kubernetes-platform/)
-[![Roadmap](https://img.shields.io/badge/roadmap-phase%201%20of%2015-f59e0b?style=flat-square)](ROADMAP.md)
+[![Roadmap](https://img.shields.io/badge/roadmap-phase%202%20of%2015-f59e0b?style=flat-square)](ROADMAP.md)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-v1.36.1-326ce5?style=flat-square&logo=kubernetes&logoColor=white)](infra/kind/cluster.yaml)
 [![Local cluster](https://img.shields.io/badge/local-kind%20v0.32-8b5cf6?style=flat-square)](docs/decisions/0001-local-cluster-kind-over-k3d.md)
 [![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE)
@@ -22,9 +22,9 @@ GitOps delivery · policy enforced at admission · tested backups · verified re
 ---
 
 > [!NOTE]
-> **Phase 1 of 15 — Foundation.** The repository scaffold, governance, and a
-> one-command local cluster work today and are verified end to end. Everything else is
-> documented scaffolding with acceptance criteria written in advance.
+> **Phase 2 of 15 — Cluster basics.** A one-command local cluster, four namespaces
+> with quotas and limit ranges, least-privilege RBAC, and ingress/TLS/metrics addons
+> all work today and are verified by 40 assertions that try to break them.
 > Nothing here is described as done before it is — see [ROADMAP.md](ROADMAP.md).
 
 ## Contents
@@ -108,11 +108,14 @@ and `make`. `make preflight` checks all of it and names anything missing.
 git clone https://github.com/sameeralam3127/kubernetes-platform.git
 cd kubernetes-platform
 
-make preflight   # verify your toolchain
-make up          # create the cluster (1–3 min first run)
-make status      # confirm healthy
-make down        # tear it all down
+make preflight         # verify your toolchain
+make bootstrap         # cluster + namespaces + RBAC + addons, from nothing
+make verify-platform   # 40 assertions that try to break the guardrails
+make down              # tear it all down
 ```
+
+`make bootstrap` is `up` → `apply-base` → `addons`. Run them individually if you
+prefer; all three are idempotent.
 
 <details>
 <summary><b>Expected output</b></summary>
@@ -140,10 +143,26 @@ kubernetes-platform-worker2         Ready    <none>          27s   v1.36.1
 `make up` is idempotent and refuses to report success on a half-built cluster —
 it probes the API server rather than trusting that the cluster is merely *listed*.
 Teardown is scoped by kind cluster **name**, so it is structurally incapable of
-touching a real cluster.
+touching a real cluster, and every script that writes to a cluster checks it is
+pointed at the local kind context before doing anything.
 
 Run `make help` for every target. Full walkthrough, configuration, and
 troubleshooting: [docs/local-development.md](docs/local-development.md).
+
+### See the guardrails work
+
+```bash
+kubectl apply -k examples/hello-workload/   # a fully compliant workload
+curl http://localhost/hello                 # → 200, replicas spread across both workers
+
+kubectl apply -f examples/quota-limits/oversized-pod.yaml
+#   Error from server (Forbidden): maximum cpu usage per Container is 1, but limit is 3
+
+./examples/rbac-demo/check.sh               # the full permission matrix
+```
+
+Each example directory has a README with the expected output verbatim. See
+[examples/](examples/).
 
 ## Tech stack
 
@@ -152,7 +171,7 @@ Every component has to justify its operational complexity, not just its populari
 | Layer | Choice | Status |
 | --- | --- | :-- |
 | **Local cluster** | [kind](docs/decisions/0001-local-cluster-kind-over-k3d.md) — 1 control-plane + 2 workers | ✅ Phase 1 |
-| **Networking** | ingress-nginx, cert-manager | Phase 2 |
+| **Networking** | ingress-nginx, cert-manager | ✅ Phase 2 |
 | **Packaging** | Helm (reuse) + Kustomize (environments), [each for its strength](helm/README.md) | Phase 4 |
 | **CI/CD** | GitHub Actions, Trivy, Syft, Cosign | Phase 5 |
 | **GitOps** | Argo CD + ApplicationSets | Phase 6 |
@@ -173,8 +192,8 @@ deliverables and acceptance criteria in **[ROADMAP.md](ROADMAP.md)**.
 
 | # | Phase | Status | # | Phase | Status |
 | :-: | --- | :-: | :-: | --- | :-: |
-| 1 | Foundation | 🟡 | 9 | Scaling & resilience | ⬜ |
-| 2 | Cluster basics | ⬜ | 10 | Infrastructure as Code | ⬜ |
+| 1 | Foundation | ✅ | 9 | Scaling & resilience | ⬜ |
+| 2 | Cluster basics | 🟡 | 10 | Infrastructure as Code | ⬜ |
 | 3 | Application deployment | ⬜ | 11 | Backups & DR | ⬜ |
 | 4 | Packaging & overlays | ⬜ | 12 | Chaos engineering | ⬜ |
 | 5 | CI/CD | ⬜ | 13 | Progressive delivery | ⬜ |
@@ -182,11 +201,36 @@ deliverables and acceptance criteria in **[ROADMAP.md](ROADMAP.md)**.
 | 7 | Observability | ⬜ | 15 | Portfolio polish | ⬜ |
 | 8 | Security hardening | ⬜ | | | |
 
-🟡 In progress · ⬜ Not started
+✅ Complete · 🟡 In progress · ⬜ Not started
 
 ## Platform capabilities
 
 What each capability will look like when its phase lands. Expand for detail.
+
+<details>
+<summary><b>Namespaces, quotas &amp; RBAC</b> — ✅ Phase 2</summary>
+
+Four namespaces — `platform-system`, `dev`, `staging`, `prod` — each workload
+namespace carrying a ResourceQuota and a LimitRange. `platform-system` has **no**
+quota on purpose: a tenant filling its own namespace must never be able to stop
+the ingress controller from scheduling.
+
+Two personas, each **one** ServiceAccount bound into several namespaces with
+different Roles:
+
+| | dev | staging | prod |
+| --- | --- | --- | --- |
+| `developer` | write + `exec` | write, no `exec` | **read only** |
+| `ci-deployer` | deploy only | — | — |
+
+Plus one cluster-scoped grant — `platform-viewer`, read-only. Cluster-wide
+*visibility*, namespace-scoped *authority*. Nothing in the repository binds
+`cluster-admin`.
+
+See [docs/architecture.md](docs/architecture.md) and
+[k8s/base/rbac/](k8s/base/rbac/).
+
+</details>
 
 <details>
 <summary><b>Deployment &amp; environments</b> — Phases 3, 4, 6</summary>

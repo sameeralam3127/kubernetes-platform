@@ -2,7 +2,7 @@
 
 Self-contained example workloads that exercise a single platform feature.
 
-**Scaffold — grows from [Phase 2](../ROADMAP.md#phase-2--cluster-basics) onward.**
+**Three examples work today (Phase 2); the rest arrive with their phase.**
 
 ## How this differs from apps/
 
@@ -24,13 +24,13 @@ before the allow rule and `200 OK` after is a demonstration. Every significant
 platform capability should have one, and every one is also an onboarding doc for
 whoever joins next.
 
-## Planned examples
+## Examples
 
 | Example | Demonstrates | Phase |
 | --- | --- | --- |
-| `hello-workload/` | Minimal compliant Deployment: probes, limits, non-root, correct labels | 2 |
-| `quota-limits/` | A pod rejected by ResourceQuota, and one that fits | 2 |
-| `rbac-demo/` | Two ServiceAccounts, different permissions, `kubectl auth can-i` output | 2 |
+| [`hello-workload/`](hello-workload/) | Minimal compliant Deployment: probes, limits, non-root, spread across workers | ✅ 2 |
+| [`quota-limits/`](quota-limits/) | A container refused by the LimitRange, a Deployment throttled by the quota, and a pod with no resources that is admitted anyway | ✅ 2 |
+| [`rbac-demo/`](rbac-demo/) | The full permission matrix for both personas across all namespaces | ✅ 2 |
 | `ingress-tls/` | cert-manager issuing a certificate end to end | 3 |
 | `hpa-load/` | Scaling under load, with the Grafana panel to watch | 9 |
 | `pdb-drain/` | A PodDisruptionBudget blocking an unsafe drain | 9 |

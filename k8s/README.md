@@ -4,8 +4,18 @@ Raw Kubernetes manifests — the plain YAML layer, before any templating or over
 
 ```
 k8s/
-└── base/    # namespaces, RBAC, quotas, limit ranges, first workloads
+├── base/                 # ✅ Phase 2 — the Kustomize base
+│   ├── kustomization.yaml
+│   ├── namespaces/       # platform-system, dev, staging, prod
+│   ├── governance/       # ResourceQuota + LimitRange per environment
+│   └── rbac/             # developer + ci-deployer personas, platform-viewer
+└── addons/               # ✅ Phase 2 — third-party component config
+    ├── clusterissuer-selfsigned.yaml
+    └── values/           # pinned Helm values per addon
 ```
+
+Apply with `make apply-base` (guarded — refuses a non-kind context) and
+`make addons`. Verify with `make verify-platform`.
 
 ## What belongs here
 
