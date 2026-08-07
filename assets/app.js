@@ -42,11 +42,16 @@
     },
     {
       label: 'Runtime', sub: 'Phase 1 · 2',
-      title: 'Cluster & networking', accent: 'var(--green)', phase: 'Phase 1 · 2',
+      title: 'Cluster, guardrails & networking', accent: 'var(--green)', phase: 'Phase 1 · 2',
       nodes: [
         { n: 'kind — 3 nodes', live: true },
-        { n: 'namespaces' }, { n: 'RBAC' }, { n: 'ResourceQuota' },
-        { n: 'ingress-nginx' }, { n: 'cert-manager' }, { n: 'metrics-server' }
+        { n: 'namespaces ×4', live: true },
+        { n: 'RBAC personas', live: true },
+        { n: 'ResourceQuota', live: true },
+        { n: 'LimitRange', live: true },
+        { n: 'ingress-nginx', live: true },
+        { n: 'cert-manager', live: true },
+        { n: 'metrics-server', live: true }
       ]
     },
     {
@@ -76,13 +81,16 @@
 
   var STACK = [
     { layer: 'Local cluster', name: 'kind', st: 'done', ph: 1, d: '1 control-plane + 2 workers. Upstream Kubernetes via kubeadm — no distribution defaults to explain away.' },
+    { layer: 'Namespaces & quotas', name: 'ResourceQuota + LimitRange', st: 'done', ph: 2, d: 'Per-environment caps sized so a rejection is demonstrable, with defaults so ordinary work is not blocked.' },
+    { layer: 'Access control', name: 'RBAC personas', st: 'done', ph: 2, d: 'One identity per persona bound across namespaces. Cluster-wide visibility, namespace-scoped authority. No cluster-admin anywhere.' },
+    { layer: 'Metrics (basic)', name: 'metrics-server', st: 'done', ph: 2, d: 'Resource metrics for kubectl top, and the input HPA needs from Phase 9.' },
     { layer: 'Packaging', name: 'Helm', st: 'todo', ph: 4, d: 'Reusable, parameterised charts. Used where the difference is which service, not which environment.' },
     { layer: 'Environments', name: 'Kustomize', st: 'todo', ph: 4, d: 'Overlays for dev/staging/prod. No templating language — patches stay declarative and diffable.' },
     { layer: 'GitOps', name: 'Argo CD', st: 'todo', ph: 6, d: 'App-of-apps plus ApplicationSets. Git is the audit trail; drift is detected everywhere.' },
     { layer: 'CI/CD', name: 'GitHub Actions', st: 'todo', ph: 5, d: 'Lint, test, build, scan, SBOM, sign, push. Actions pinned by commit SHA, not tag.' },
     { layer: 'Supply chain', name: 'Trivy · Syft · Cosign', st: 'todo', ph: 5, d: 'Scanning, SBOMs and keyless signing — with admission-time verification, since signing alone is theatre.' },
-    { layer: 'Networking', name: 'ingress-nginx', st: 'todo', ph: 2, d: 'Chosen deliberately rather than inherited, and reachable at localhost via mapped host ports.' },
-    { layer: 'TLS', name: 'cert-manager', st: 'todo', ph: 2, d: 'Automated certificate issuance and renewal. Expiry is a documented failure mode with a runbook.' },
+    { layer: 'Networking', name: 'ingress-nginx', st: 'done', ph: 2, d: 'Chosen deliberately rather than inherited, and reachable at localhost via mapped host ports.' },
+    { layer: 'TLS', name: 'cert-manager', st: 'done', ph: 2, d: 'Automated certificate issuance and renewal. Expiry is a documented failure mode with a runbook.' },
     { layer: 'Metrics', name: 'Prometheus + Grafana', st: 'todo', ph: 7, d: 'Recording rules for RED metrics. Alerts are symptom-based; every one carries a runbook_url.' },
     { layer: 'Logs', name: 'Loki + Fluent Bit', st: 'todo', ph: 7, d: 'Label-indexed, not full-text — cheaper, and shares Grafana with metrics. Low cardinality enforced.' },
     { layer: 'Traces', name: 'OpenTelemetry + Tempo', st: 'todo', ph: 7, d: 'Gateway collector with tail-based sampling, so errors and slow requests are kept rather than sampled away.' },
@@ -96,7 +104,7 @@
   ];
 
   var PHASES = [
-    { n: 1, name: 'Foundation', st: 'progress',
+    { n: 1, name: 'Foundation', st: 'done',
       obj: 'A repo you can clone and get a working multi-node cluster from, in one command.',
       del: ['Full directory tree, each folder documented with what belongs in it',
             'MIT licence, contributing guide, code of conduct, security policy',
@@ -113,20 +121,28 @@
       demo: 'git clone && make up — a three-node cluster in under three minutes.',
       iv: 'Decision discipline. ADR-0001 is a written defence of a tool choice with its costs stated.' },
 
-    { n: 2, name: 'Cluster basics', st: 'todo',
+    { n: 2, name: 'Cluster basics', st: 'progress',
       obj: 'Turn an empty cluster into a multi-tenant-shaped platform with guardrails — before any application exists to bend them.',
-      del: ['Namespace per environment plus platform-system, with ownership labels',
-            'Developer and CI personas via RBAC — neither is cluster-admin',
-            'ResourceQuotas and LimitRanges so one pod cannot starve the cluster',
-            'ingress-nginx, metrics-server, cert-manager via install-addons.sh',
-            'Examples demonstrating a quota rejection and RBAC boundaries'],
-      tools: ['kubectl', 'Helm', 'cert-manager', 'ingress-nginx', 'metrics-server'],
-      ac: [['Every namespace has a quota and a limit range', 0],
-           ['kubectl auth can-i proves the developer role cannot escalate', 0],
-           ['A pod exceeding quota is rejected with a comprehensible message', 0],
-           ['An Ingress serves traffic at http://localhost', 0]],
-      demo: 'Show a deploy being refused. Guardrails you can watch work beat guardrails described.',
-      iv: 'Multi-tenancy, least privilege and capacity governance — running a cluster others deploy to.' },
+      del: ['Four namespaces: platform-system, dev, staging, prod, with ownership labels',
+            'ResourceQuota + LimitRange per workload namespace; platform-system deliberately unquotaed',
+            'Two personas — one ServiceAccount each, bound across namespaces with different Roles',
+            'ingress-nginx, metrics-server and cert-manager at pinned chart versions',
+            'Three examples: a compliant workload, a refused one, and the full RBAC matrix',
+            'verify-platform.sh — 40 assertions that try to break the guardrails'],
+      tools: ['kubectl', 'Kustomize', 'Helm', 'ingress-nginx 4.15.1', 'metrics-server 3.13.1', 'cert-manager v1.21.1'],
+      ac: [['Every workload namespace has a quota and a limit range', 1],
+           ['platform-system has no quota, so a tenant cannot starve ingress', 1],
+           ['A 3 CPU container is refused, reporting all violations at once', 1],
+           ['A pod declaring no resources is still admitted, via LimitRange defaults', 1],
+           ['developer cannot create secrets, edit RBAC, or raise its own quota', 1],
+           ['Production is read-only for humans; exec is dev-only', 1],
+           ['CI writes to dev and nowhere else — no secrets, delete or exec', 1],
+           ['Nothing in the repo binds cluster-admin', 1],
+           ['hello-workload returns HTTP 200 with replicas across both workers', 1],
+           ['make apply-base and make addons refuse a non-kind context', 1],
+           ['make verify-platform passes 40/40 deterministically', 1]],
+      demo: 'Try to deploy something oversized and watch the cluster refuse it, with the reason.',
+      iv: 'Multi-tenancy, least privilege and capacity governance — the questions that separate deploying to Kubernetes from running a cluster others deploy to.' },
 
     { n: 3, name: 'Application deployment', st: 'todo',
       obj: 'Real workloads running, deployed by hand, so Phase 4’s abstractions solve problems actually felt.',
@@ -501,23 +517,25 @@
   /* ===================== TERMINAL ===================== */
 
   var TERM = [
-    ['c-prompt', '$ ', 'c-cmd', 'make up'],
+    ['c-prompt', '$ ', 'c-cmd', 'make bootstrap'],
     ['c-dim',    ''],
-    ['c-dim',    'Preflight — kubernetes-platform'],
-    ['c-ok',     ' ok  ', 'c-dim', 'docker 29.6.1 (daemon reachable)'],
-    ['c-ok',     ' ok  ', 'c-dim', 'kind v0.32.0'],
-    ['c-ok',     ' ok  ', 'c-dim', 'kubectl v1.36.1'],
+    ['c-ok',     ' ok  ', 'c-dim', 'kind v0.32.0 · kubectl v1.36.1'],
     ['c-key',    '==> ', 'c-dim', 'creating cluster — 1 control-plane + 2 workers'],
-    ['c-ok',     ' ok  ', 'c-dim', 'all nodes Ready'],
-    ['c-ok',     ' ok  ', 'c-dim', 'CoreDNS available'],
+    ['c-ok',     ' ok  ', 'c-dim', 'all nodes Ready · CoreDNS available'],
+    ['c-key',    '==> ', 'c-dim', 'applying k8s/base to kind-kubernetes-platform'],
+    ['c-ok',     ' ok  ', 'c-dim', 'namespaces · quotas · limit ranges · RBAC'],
+    ['c-key',    '==> ', 'c-dim', 'installing ingress-nginx · metrics-server · cert-manager'],
     ['c-dim',    ''],
-    ['c-cmd',    'NAME                    STATUS   ROLES          VERSION'],
-    ['c-dim',    'kp-control-plane        ', 'c-ok', 'Ready', 'c-dim', '    control-plane  v1.36.1'],
-    ['c-dim',    'kp-worker               ', 'c-ok', 'Ready', 'c-dim', '    <none>         v1.36.1'],
-    ['c-dim',    'kp-worker2              ', 'c-ok', 'Ready', 'c-dim', '    <none>         v1.36.1'],
+    ['c-prompt', '$ ', 'c-cmd', 'make verify-platform'],
+    ['c-ok',     '  ok ', 'c-dim', 'platform-system has no ResourceQuota, by design'],
+    ['c-ok',     '  ok ', 'c-dim', '3 CPU container refused in dev'],
+    ['c-ok',     '  ok ', 'c-dim', 'developer raises its own quota  ', 'c-warn', 'no'],
+    ['c-ok',     '  ok ', 'c-dim', 'developer writes to prod        ', 'c-warn', 'no'],
+    ['c-ok',     '  ok ', 'c-dim', 'ci deploys to prod              ', 'c-warn', 'no'],
     ['c-dim',    ''],
-    ['c-ok',     ' ok  ', 'c-cmd', "cluster 'kubernetes-platform' is healthy"]
+    ['c-ok',     ' ok  ', 'c-cmd', 'passed: 40   failed: 0']
   ];
+
 
   function typeTerm() {
     var el = $('#term'); if (!el) return;

@@ -35,5 +35,11 @@ python3 -m http.server 8080
 ## Keeping it in sync
 
 The site duplicates content from `main` (README, ROADMAP, ADRs). When a phase
-completes, update `PHASES` and `STACK` in `assets/app.js` and the status pill in
-`index.html`.
+completes, update in `assets/app.js`:
+
+- `PHASES` — the phase's `st` and its acceptance-criteria flags (`1` = verified)
+- `STACK` — any component whose `st` moved from `todo` to `done`
+- `ARCH` — mark newly-live components `live: true`
+- `TERM` — the replayed terminal session, if the headline command changed
+
+…and in `index.html`: the status pill, the badges, and the stat tiles.
